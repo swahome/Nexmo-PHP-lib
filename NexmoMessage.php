@@ -348,7 +348,101 @@ class NexmoMessage {
 	}
 
 
+ 	/*
+	 * Returns the overview as an object with status and an messages as an array of objects with status and message_id
+	 * On success This would be something like:
+	 * 
+	 * 
+	 *	stdClass Object
+	 *	 (
+	 *	 	[code] => 1
+	 *	 	[status_text] => Your message was sent
+	 *	 	[message_count] => 1
+	 *	 	[status] => Your message was sent
+	 *	 	[message_status] => Array
+	 *	 		(
+	 *	 			[0] => stdClass Object
+	 *	 				(
+	 *	 					[to] => 447234567890
+	 *	 					[messageprice] => 0.00750000
+	 *	 					[status] => 0
+	 *	 					[messageid] => 010000000AA044A
+	 *	 					[remainingbalance] => 71.96250000
+	 *	 				)
+	 *	 
+	 *	 		)
+	 *	 
+	 *	 )
+	 *
+	 * On error you would have something like:
+	 * 
+	 *	stdClass Object
+	 *	 (
+	 *	 	[code] => 0
+	 *	 	[status_text] => There was an error sending your message
+	 *	 	[message_count] => 0
+	 *	 	[status] => There was an error sending your message
+	 *	 	[message_status] => Array
+	 *	 		(
+	 *	 			[0] => stdClass Object
+	 *	 				(
+	 *	 					[status] => 2
+	 *	 					[errortext] => Missing from param
+	 *	 				)
+	 *	 
+	 *	 		)
+	 *	 
+	 *	 )
+	 *
+	 */
+	
+	public function getOverview( $nexmo_response=null ){
+		$info = (!$nexmo_response) ? $this->nexmo_response : $nexmo_response;
+		$code=3;
+		$message_count=0;
+		$message_status = array();
+		if (!$nexmo_response ){
+			$status= 'Cannot display an overview of this response';
+			$response->code=$code;
+			$response->status_text=$status;
+			$response->message_count=$message_count;
+			$response->status=$status;
+			$response->message_status=$message_status;
+			return $response;
+		}
+		
+		// How many messages were sent? That is if they were
+		if ( $info->messagecount > 1 ) {
+		
+			$status = 'Your message was sent in ' . $info->messagecount . ' parts';
+			$code=2;
+			$message_count=$info->messagecount;
+		
+		} elseif ( $info->messagecount == 1) {
+		
+			$status = 'Your message was sent';
+			$code=1;
+			$message_count=1;
+		
+		} else {
 
+			$status = 'There was an error sending your message';
+			$code=0;
+			$message_count=0;
+		}
+		
+		// Ensure messages is an array if empty
+		if (!is_array($info->messages)) $info->messages = array();
+		
+		
+		// Build the output
+		$response->code=$code;
+		$response->status_text=$status;
+		$response->message_count=$message_count;
+		$response->status=$status;
+		$response->message_status=$info->messages;
+		return $response;
+	}
 
 
 
